@@ -1,5 +1,5 @@
 cuba -v 3.1.0
-ohm -v 2.0.0.alpha5
+ohm -v 2.0.0.rc1
 cutest -v 1.2.1
 shield -v 2.1.0
 basica -v 0.0.1
