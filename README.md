@@ -24,5 +24,5 @@ This is a skeleton for a Cuba-based JSON API.
     echo APP_KEY=foo    >> env.sh
     echo APP_SECRET=bar >> env.sh
 
-    # Make sure redis is running and run the tests:
+    # Make sure Redis is running and run the tests:
     $ make test
