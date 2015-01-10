@@ -1,7 +1,7 @@
-cuba -v 3.1.1
 ohm -v 2.0.1
-cutest -v 1.2.1
-shield -v 2.1.0
+cutest -v 1.2.2
+shield -v 2.1.1
 basica -v 0.0.1
-rack-test -v 0.6.2
+rack-test -v 0.6.3
 shotgun -v 0.9
+cuba -v 3.3.0
