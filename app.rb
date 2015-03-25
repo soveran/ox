@@ -1,15 +1,12 @@
 require "ohm"
 require "cuba"
 require "json"
-require "basica"
 require "shield"
+require "basica"
 
-Cuba.plugin Shield::Helpers
+Ohm.redis = Redic.new(ENV.fetch("REDIS_URL"))
+
 Cuba.plugin Basica
-
-Cuba.use Rack::Session::Cookie,
-  key: ENV.fetch("APP_KEY"),
-  secret: ENV.fetch("APP_SECRET")
 
 # Require all application files.
 Dir["./models/**/*.rb"].each  { |rb| require rb }
@@ -28,15 +25,17 @@ Cuba.define do
     res.write "Unauthorized"
   end
 
-  basic_auth(env) do |user, pass|
-    login(User, user, pass)
+  user = nil
+
+  basic_auth(env) do |username, password|
+    user = User.authenticate(username, password)
   end
 
-  on authenticated(User) do
-    run Users
+  on user.nil? do
+    res.status = 401
   end
 
   on default do
-    res.status = 401
+    run Users
   end
 end

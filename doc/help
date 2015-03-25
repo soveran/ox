@@ -1,0 +1,94 @@
+usage: make [install|update|server|test|console]
+
+## Commands
+
+install:
+	Initialize your project. It creates the `.gs` directory,
+	where the dependencies will be installed, and also the
+	`env.sh` file, where environment variables will be defined.
+	Internally, it calls the commands `init` and `update`.
+
+update:
+	Install dependencies in the `.gs` directory.
+
+test:
+	Run tests. This is the default task, so you can run `make`
+	and omit the task name.
+
+server:
+	Run the application on localhost, port 9393.
+
+console:
+	Start an interactive Ruby session with the application
+	available for direct access.
+
+## Examples
+
+Initialize the project:
+
+	$ make install
+
+Make sure Redis is running on port 6379, then run the tests:
+
+	$ make
+
+Interact with your application via IRB:
+
+	$ make console
+
+Once in IRB, you have access to your application. This is an
+example of an interactive session:
+
+	>> Cuba.call({})
+	=> [401, {"WWW-Authenticate"=>"Basic realm=\"MyApp\"", "Content-Length"=>"12"}, ["Unauthorized"]]
+
+As you can see, if we pass an empty hash we get a basic auth
+error. We can create a user right now:
+
+	>> User.create(username: "sample", password: "monkey")
+	=> #<User:0x007f83240fba00 ...>
+
+There's a helper available for interacting with the application:
+
+	>> ox = Ox.new(Cuba)
+	=> #<Ox:0x007fcfe492ea58 @app=Cuba>
+
+We can recreate the previous situation, where we got
+an `Unauthorized` error:
+
+	>> ox.get("/")
+	=> [401, ["Unauthorized"]]
+
+We can now authenticate the client:
+
+	>> ox.auth("sample", "monkey")
+	=> true
+
+And now that we have an authenticated client, we can send requests
+to the app:
+
+	>> ox.get("/")
+	=> [200, ["{\"foo\":42}"]]
+
+In the sample application, a sub app called `Users` is mounted for
+requests that pass the authentication phase. In development and
+testing, you can use `Ox` to interact with sub apps directly:
+
+	>> ox = Ox.new(Users)
+	=> #<Ox:0x007fcfe3900c80 @app=Users>
+	>> ox.get("/")
+	=> [200, ["{\"foo\":42}"]]
+
+As the authentication is defined only in `Cuba`, there's no need
+to authenticate the client for interacting with `Users`. This
+allows you to skip some boilerplate when testing and developing
+your application.
+
+Finally, you can start the server:
+
+	$ make server
+
+You can visit `localhost:9393` to access your application. As it
+is a JSON API, you won't see much when accessing it with your
+browser. Tools like curl or any other HTTP client are better
+alternatives for using your application.

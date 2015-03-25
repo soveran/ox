@@ -1,4 +1,3 @@
-require_relative "../app.rb"
-
-require "rack/test"
-require "cuba/test"
+require "pp"
+require_relative "../app"
+require_relative "../lib/ox"

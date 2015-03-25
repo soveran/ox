@@ -1,12 +1,12 @@
 class User < Ohm::Model
   include Shield::Model
 
-  attribute :email
+  attribute :username
   attribute :crypted_password
 
-  unique :email
+  unique :username
 
-  def self.fetch(email)
-    with(:email, email)
+  def self.fetch(username)
+    with(:username, username)
   end
 end

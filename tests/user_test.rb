@@ -1,27 +1,56 @@
 require_relative "helper"
 
+EXAMPLE = {
+  username: "sample",
+  password: "monkey",
+}
+
 scope do
   prepare do
     Ohm.flush
+    User.create(EXAMPLE)
   end
 
   setup do
-    User.create(email: "user@example.com", password: "monkey")
+    Ox.new(Cuba)
   end
 
-  test "invalid auth" do |user|
-    authorize "some@example.com", "monkey1"
-    get "/"
+  test "invalid auth" do |ox|
+    ox.auth("sample", "wrongpass")
 
-    assert_equal 401, last_response.status
+    status, body = ox.get("/")
+
+    assert_equal 401, status
   end
 
-  test "valid auth" do |user|
-    authorize "user@example.com", "monkey"
-    get "/"
+  test "valid auth" do |ox|
+    ox.auth(EXAMPLE[:username], EXAMPLE[:password])
 
-    result = JSON.parse(last_response.body)
+    status, body = ox.get("/")
 
-    assert_equal result["foo"], 42
+    result = JSON.parse(body.join)
+
+    assert_equal 200, status
+    assert_equal 42, result["foo"]
+  end
+end
+
+scope do
+  test "sub app" do
+    ox = Ox.new(Users)
+
+    status, body = ox.get("/")
+
+    result = JSON.parse(body.join)
+
+    assert_equal 200, status
+    assert_equal 42, result["foo"]
+
+    status, body = ox.get("/foo")
+
+    result = JSON.parse(body.join)
+
+    assert_equal 200, status
+    assert_equal 23, result["foo"]
   end
 end

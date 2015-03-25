@@ -4,25 +4,20 @@ This is a skeleton for a Cuba-based JSON API.
 
 ## Getting started
 
+Make sure Redis is installed.
+
     # Clone this repository:
     $ git clone git@github.com:soveran/ox.git
 
     # Go to the app's directory:
     $ cd ox
 
-    # Install the gs and dep gems:
-    $ gem install gs
-    $ gem install dep
+    # Read the documentation
+    $ make help
 
-    # Create a gemset:
-    $ gs init
+All the commands are run with `make`, and the guide
+provides a step by step example of how to get started
+and how to interact with your application.
 
-    # Install dependencies:
-    $ dep install
-
-    # Create env.sh (with sensible values):
-    echo APP_KEY=foo    >> env.sh
-    echo APP_SECRET=bar >> env.sh
-
-    # Make sure Redis is running and run the tests:
-    $ make test
+If you need help, please leave a note in the issues
+tracker or talk to us on IRC, #lesscode at freenode.

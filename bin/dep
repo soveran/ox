@@ -1,0 +1,288 @@
+#!/usr/bin/env ruby
+
+require "fileutils"
+
+def die
+  abort("error: dep --help for more info")
+end
+
+module Dep
+  class List
+    attr :path
+
+    def initialize(path)
+      @path = path
+    end
+
+    def add(lib)
+      remove(lib)
+      libraries.push(lib)
+    end
+
+    def remove(lib)
+      libraries.delete_if { |e| e.name == lib.name }
+    end
+
+    def libraries
+      @libraries ||= File.readlines(path).map { |line| Lib[line] }
+    end
+
+    def missing_libraries
+      libraries.reject(&:available?)
+    end
+
+    def save
+      File.open(path, "w") do |file|
+        libraries.each do |lib|
+          file.puts lib.to_s
+        end
+      end
+    end
+  end
+
+  class Lib < Struct.new(:name, :version)
+    def self.[](line)
+      if line.strip =~ /^(\S+) -v (\S+)$/
+        return new($1, $2)
+      else
+        abort("Invalid requirement found: #{line}")
+      end
+    end
+
+    def available?
+      Gem::Specification.find_by_name(name, version)
+    rescue Gem::LoadError
+      return false
+    end
+
+    def to_s
+      "#{name} -v #{version}"
+    end
+
+    def csv
+      "#{name}:#{version}"
+    end
+
+    def ==(other)
+      to_s == other.to_s
+    end
+  end
+
+  class CLI
+    attr_accessor :prerelease, :list, :file
+
+    def add(name)
+      dependency = Gem::Dependency.new(name)
+      fetcher = Gem::SpecFetcher.fetcher
+
+      if fetcher.respond_to?(:spec_for_dependency)
+        dependency.prerelease = @prerelease
+        res, _ = fetcher.spec_for_dependency(dependency)
+      else
+        res = fetcher.fetch(dependency, false, true, @prerelease)
+      end
+
+      abort("Unable to find #{name}") if res.empty?
+
+      spec = res[-1][0]
+      lib  = Dep::Lib.new(spec.name, spec.version)
+
+      @list.add(lib)
+      @list.save
+
+      puts "dep: added #{lib}"
+    end
+
+    def rm(name)
+      @list.remove(Dep::Lib.new(name))
+      @list.save
+
+      puts "dep: removed #{name}"
+    end
+
+    def check
+      if @list.missing_libraries.empty?
+        puts "dep: all cool"
+      else
+        puts "dep: the following libraries are missing"
+
+        @list.missing_libraries.each do |lib|
+          puts "  %s" % lib
+        end
+
+        exit(1)
+      end
+    end
+
+    def install
+      if @list.missing_libraries.empty?
+        puts "dep: nothing to install"
+        exit
+      end
+
+      run "gem install #{@list.missing_libraries.map(&:csv).join(" ")}"
+    end
+
+    def run(cmd)
+      puts "  #{cmd}"
+      `#{cmd}`
+    end
+  end
+end
+
+module Kernel
+private
+  def on(flag, &block)
+    if index = ARGV.index(flag)
+      _ = ARGV.delete_at(index)
+
+      case block.arity
+      when 1 then block.call(ARGV.delete_at(index))
+      when 0 then block.call
+      else
+        die
+      end
+    end
+  end
+end
+
+# So originally, this was just $0 == __FILE__, but
+# since rubygems wraps the actual bin file in a loader
+# script, we have to instead rely on a different condition.
+if File.basename($0) == "dep"
+
+  cli = Dep::CLI.new
+
+  cli.file = File.join(Dir.pwd, ".gems")
+  cli.prerelease = false
+
+  on("-f") do |file|
+    cli.file = file
+  end
+
+  on("--pre") do
+    cli.prerelease = true
+  end
+
+  on("--help") do
+
+    # We can't use DATA.read because rubygems does a wrapper script.
+    help = File.read(__FILE__).split(/^__END__/)[1]
+
+    IO.popen("less", "w") { |f| f.write(help) }
+    exit
+  end
+
+  cli.list = Dep::List.new(cli.file)
+
+  FileUtils.touch(cli.list.path) unless File.exist?(cli.list.path)
+
+  case ARGV[0]
+  when "add"
+    cli.add(ARGV[1])
+  when "rm"
+    cli.rm(ARGV[1])
+  when "install", "i"
+    cli.install
+  when nil
+    cli.check
+  else
+    die
+  end
+
+end
+
+__END__
+DEP(1)
+
+NAME
+      dep -- Basic dependency tracking
+
+SYNOPSIS
+      dep
+      dep add libname [--pre]
+      dep rm libname
+      dep install
+
+DESCRIPTION
+      dep
+          Checks that all dependencies are met.
+
+      dep add [gemname]
+          Fetches the latest version of `gemname`
+          and automatically adds it to your .gems file.
+
+      rm
+          Removes the corresponding entry in your .gems file.
+
+      install
+          Installs all the missing dependencies for you. An important
+          point here is that it simply does a `gem install` for each
+          dependency you have. Dep assumes that you use some form of
+          sandboxing like gs, rbenv-gemset or RVM gemsets.
+
+
+INSTALLATION
+      $ wget -qO- http://amakawa.org/sh/install.sh | sh
+
+      # or
+
+      $ gem install dep
+
+HISTORY
+      dep is actually more of a workflow than a tool. If you think about
+      package managers and the problem of dependencies, you can summarize
+      what you absolutely need from them in just two points:
+
+      1. When you build an application which relies on 3rd party libraries,
+         it's best to explicitly declare the version numbers of these
+         libraries.
+
+      2. You can either bundle the specific library version together with
+         your application, or you can have a list of versions.
+
+      The first approach is handled by vendoring the library. The second
+      approach typically is done using Bundler. But why do you need such
+      a complicated tool when all you need is simply listing version numbers?
+
+      We dissected what we were doing and eventually reached the following
+      workflow:
+
+      1. We maintain a .gems file for every application which lists the
+         libraries and the version numbers.
+      2. We omit dependencies of dependencies in that file, the reason being
+         is that that should already be handled by the package manager
+         (typically rubygems).
+      3. Whenever we add a new library, we add the latest version.
+      4. When we pull the latest changes, we want to be able to rapidly
+         check if the dependencies we have is up to date and matches what
+         we just pulled.
+
+      So after doing this workflow manually for a while, we decided to
+      build the simplest tool to aid us with our workflow.
+
+      The first point is handled implicitly by dep. You can also specify
+      a different file by doing dep -f.
+
+      The second point is more of an implementation detail. We thought about
+      doing dependencies, but then, why re-implement something that's already
+      done for you by rubygems?
+
+      The third point (and also the one which is most inconvenient), is
+      handled by dep add.
+
+      The manual workflow for that would be:
+
+      gem search -r "^ohm$" [--pre] # check and remember the version number
+      echo "ohm -v X.x.x" >> .gems
+
+      If you try doing that repeatedly, it will quickly become cumbersome.
+
+      The fourth and final point is handled by typing dep check or simply dep.
+      Practically speaking it's just:
+
+      git pull
+      dep
+
+      And that's it. The dep command typically happens in 0.2 seconds which
+      is something we LOVE.

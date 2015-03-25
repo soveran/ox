@@ -1,0 +1,52 @@
+#!/usr/bin/env ruby
+
+help = <<EOS
+GS(1)
+
+NAME
+      gs -- Gemset management
+
+SYNOPSIS
+      gs init
+      gs help
+      gs [command]
+
+DESCRIPTION
+      When called with no arguments, it starts a shell session and
+      configures the variables GEM_HOME, GEM_PATH and PATH to point
+      to the $PWD/.gs directory. In addition, it sets the GS_NAME
+      variable with the name of the current gemset (useful for PS1).
+
+      init
+          Creates the $PWD/.gs directory.
+
+      help
+          Displays this message.
+
+      [command]
+          An optional command that will be executed under gs shell
+          session and return to the caller session once finished.
+EOS
+
+case ARGV[0]
+when "init" then Dir.mkdir(".gs"); exec($0)
+when "help" then puts help
+else
+  if File.directory?(".gs")
+    pwd = Dir.pwd
+    env = ENV.to_hash
+    env["GS_NAME"]  = File.basename(pwd)
+    env["GEM_HOME"] = pwd + "/.gs"
+    env["GEM_PATH"] = pwd + "/.gs:#{`gem env path`.strip}"
+    env["PATH"]     = pwd + "/.gs/bin:#{ENV['PATH']}"
+
+    if ARGV.length > 0
+      exec env, *ARGV
+    else
+      exec env, ENV["SHELL"] || ENV["COMSPEC"]
+    end
+  else
+    puts "Directory .gs not found. Try `gs help`."
+    exit 1
+  end
+end

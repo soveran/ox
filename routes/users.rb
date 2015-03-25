@@ -10,4 +10,10 @@ Users.define do
   on root do
     res.write JSON.dump({ foo: 42 })
   end
+
+  on "foo" do
+    on root do
+      res.write JSON.dump({ foo: 23 })
+    end
+  end
 end
