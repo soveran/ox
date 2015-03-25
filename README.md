@@ -32,10 +32,10 @@ and how to interact with your application.
 
 ## Removing the application
 
-All the dependencies will be installed in your project
-directory, so if you want to get rid of it you can
-just remove that directory. There will be absolutely
-no leftovers.
+All the dependencies will be installed in your project directory,
+so if you want to get rid of your project along with all its
+dependencies, you can just remove that directory. There will be
+absolutely no leftovers.
 
 ## Community
 
