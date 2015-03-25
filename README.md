@@ -1,6 +1,6 @@
 # ox
 
-Skeleton for a Cuba-based JSON API.
+Skeleton for self-contained, Cuba-based JSON API.
 
 ## Description
 
