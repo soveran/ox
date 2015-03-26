@@ -5,7 +5,7 @@ class Users < Cuba
 end
 
 Users.define do
-  res.headers["Content-Type"] = "application/json; charset=utf-8"
+  res.headers["Content-Type"] = "application/json"
 
   on root do
     res.write JSON.dump({ foo: 42 })
