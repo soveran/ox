@@ -36,6 +36,8 @@ Cuba.define do
   end
 
   on default do
-    run Users
+    with(user: user) do
+      run Users
+    end
   end
 end
