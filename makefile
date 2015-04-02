@@ -8,13 +8,13 @@ default: test
 start: server
 
 server:
-	@env $$(cat env.sh) $(GS) shotgun -s puma -o 0.0.0.0
+	@$(GS) env $$(cat env.sh) shotgun -s puma -o 0.0.0.0
 
 console:
-	@env $$(cat env.sh) $(GS) irb -r ./cli
+	@$(GS) env $$(cat env.sh) irb -r ./cli
 
 test:
-	@env $$(cat env.sh) $(GS) cutest -r ./tests/helper.rb tests/*_test.rb
+	@$(GS) env $$(cat env.sh) cutest -r ./tests/helper.rb tests/*_test.rb
 
 install: init update
 
