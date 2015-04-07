@@ -1,4 +1,4 @@
-usage: make [install|update|server|test|console]
+usage: make [install|update|server|test|console|help]
 
 ## Commands
 
@@ -12,8 +12,7 @@ update:
 	Install dependencies in the `.gs` directory.
 
 test:
-	Run tests. This is the default task, so you can run `make`
-	and omit the task name.
+	Run tests.
 
 server:
 	Run the application on localhost, port 9393.
@@ -21,6 +20,9 @@ server:
 console:
 	Start an interactive Ruby session with the application
 	available for direct access.
+
+help:
+	Display this help text.
 
 ## Examples
 
@@ -30,7 +32,7 @@ Initialize the project:
 
 Make sure Redis is running on port 6379, then run the tests:
 
-	$ make
+	$ make test
 
 Interact with your application via IRB:
 
